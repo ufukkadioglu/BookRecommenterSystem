@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  api:
+    restart: always
+    build: api
+    container_name: book_recommender_api
+    ports:
+      - "5000:80"
+    volumes:
+      - ./api:/api
+  user_interface:
+    restart: always
+    build: user_interface
+    container_name: book_recommender_ui
+    ports:
+      - "5001:3000"
+    volumes:
+      - ./user_interface:/user_interface
