@@ -64,16 +64,15 @@ def get_top_n_similar_books(similar_users, similar_user_books, number_of_books_t
         # Get the average score for the item
         item_score[i] = total / count
     # Convert dictionary to pandas dataframe
-    item_score = pd.DataFrame(item_score.items(), columns=['book', 'book_score'])
+    item_score = pd.DataFrame(item_score.items(), columns=['ISBN', 'ScorePrediction'])
 
     # Sort the books by score
-    ranked_item_score = item_score.sort_values(by='book_score', ascending=False)
+    ranked_item_score = item_score.sort_values(by='ScorePrediction', ascending=False)
+
     return ranked_item_score.head(number_of_books_to_recommend)
 
 
-def get_user_similarity():
-    books_with_ratings = get_books_with_ratings()
-
+def get_user_similarity(books_with_ratings):
     # find number of ratings and rate count
     agg_ratings = books_with_ratings.groupby('ISBN').agg(mean_rating=('Book-Rating', 'mean'),
                                                          number_of_ratings=('Book-Rating', 'count')).reset_index()
@@ -87,21 +86,32 @@ def get_user_similarity():
     return user_book_matrix, user_similarity
 
 
-def user_based_collaborative_filtering(picked_userid,
+def user_based_collaborative_filtering(picked_user_id,
                                        number_of_books_to_recommend=10,
                                        number_of_similar_users=10,
                                        user_similarity_threshold=0.1):
-    user_book_matrix, user_similarity = get_user_similarity()
+    books_with_ratings = get_books_with_ratings()
+
+    user_book_matrix, user_similarity = get_user_similarity(books_with_ratings)
+
+    if picked_user_id not in user_similarity.columns:
+        try:
+            picked_user_id = int(picked_user_id)
+
+            if picked_user_id not in user_similarity.columns:
+                return "User not found"
+        except ValueError:
+            return "User not found (tried casting)"
 
     # remove picked user
-    user_similarity.drop(index=picked_userid, inplace=True)
+    user_similarity.drop(index=picked_user_id, inplace=True)
 
     # Get top n similar users
-    similar_users = user_similarity[user_similarity[picked_userid] > user_similarity_threshold][
-                        picked_userid].sort_values(ascending=False)[:number_of_similar_users]
+    similar_users = user_similarity[user_similarity[picked_user_id] > user_similarity_threshold][
+                        picked_user_id].sort_values(ascending=False)[:number_of_similar_users]
 
     # get the books which picked user already rated
-    picked_userid_read = user_book_matrix[user_book_matrix.index == picked_userid].dropna(axis=1, how='all')
+    picked_userid_read = user_book_matrix[user_book_matrix.index == picked_user_id].dropna(axis=1, how='all')
 
     # collect books from similar users
     similar_user_books = user_book_matrix[user_book_matrix.index.isin(similar_users.index)].dropna(axis=1, how='all')
@@ -109,9 +119,25 @@ def user_based_collaborative_filtering(picked_userid,
     # remove the books which are already rated by picked user
     similar_user_books.drop(picked_userid_read.columns, axis=1, inplace=True, errors='ignore')
 
-    return get_top_n_similar_books(similar_users, similar_user_books, number_of_books_to_recommend)
+    recommended_books = get_top_n_similar_books(similar_users, similar_user_books, number_of_books_to_recommend)
+
+    books = get_books()
+
+    recommended_books = pd.merge(recommended_books, books, on='ISBN', how='left')[
+        ['ISBN', 'ScorePrediction', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher',
+         'Image-URL-S']].rename({'ISBN': 'isbn',
+                                 'ScorePrediction': 'scorePrediction',
+                                 'Book-Title': 'bookTitle',
+                                 'Book-Author': 'bookAuthor',
+                                 'Year-Of-Publication': 'yearOfPublication',
+                                 'Publisher': 'publisher',
+                                 'Image-URL-S': 'imageUrl'
+                                 }, axis='columns')
+
+    return recommended_books
 
 
 if __name__ == "__main__":
-    books_to_recommend = user_based_collaborative_filtering(picked_userid=11676)  # 11676, 16795, 35859, 52584
+    books_to_recommend = user_based_collaborative_filtering(
+        picked_user_id=11676)  # 11676, 16795, 35859, 52584
     print(books_to_recommend)

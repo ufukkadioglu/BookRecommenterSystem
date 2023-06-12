@@ -1,7 +1,9 @@
 import pandas as pd
+import os
 
-# data_dir = './data'
-data_dir = '../data'
+data_dir = './data'
+if not os.path.isdir(data_dir):
+    data_dir = '../data'
 
 books_file_path = f"{data_dir}/original/BX-Books.csv"
 users_file_path = f"{data_dir}/original/BX-Users.csv"

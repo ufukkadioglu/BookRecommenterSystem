@@ -1,105 +1,123 @@
 import './App.css';
 import * as React from 'react';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import Divider from '@mui/material/Divider';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import Avatar from '@mui/material/Avatar';
-import Typography from '@mui/material/Typography';
-import { getSimilarity } from './apis/bookRecommenderApi';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import { getUsers, getRecommendedBooks } from './apis/bookRecommenderApi';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
 
 class App extends React.Component {
-  session = {
-    userBookMatrix: [],
-    userSimilarity: [],
+  state = {
+    selectedUser: "",
+    recommendedBooks: [],
+    userIds: [],
   }
 
   componentDidMount() {
-    getSimilarity().then(response => {
+    getUsers().then(response => {
       this.setState({
-        userBookMatrix: response.data.user_book_matrix,
-        userSimilarity: response.data.user_similarity
-      }, () => console.log(this.state.userBookMatrix, response.data));
+        userIds: response.data.user_ids,
+      });
     }).catch(err => console.log(err));
+  }
 
+  getUserSelector() {
+    return (
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">User Id</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={this.state.selectedUser}
+          label="Age"
+          onChange={(event) => this.selectedUserChanged(event.target.value)}
+        >
+          {
+            this.state.userIds?.length && this.state.userIds.map(userId => (
+              <MenuItem key={userId} value={userId}>{userId}</MenuItem>
+            ))
+          }
+        </Select>
+      </FormControl >
+    )
+  }
+
+  selectedUserChanged(selectedUser) {
+    if (selectedUser) {
+      getRecommendedBooks(selectedUser).then(response => {
+        this.setState({
+          recommendedBooks: response.data.books_to_recommend,
+          selectedUser: selectedUser
+        })
+      }).catch(err => console.log(err));
+    }
+  }
+
+  getRecommendations() {
+    return (
+      <>
+      <TableContainer component={Paper}>
+        <Table size="small" aria-label="a dense table">
+          <TableHead>
+            <TableRow>
+              <TableCell>Order</TableCell>
+              <TableCell>ISBN</TableCell>
+              <TableCell>Title</TableCell>
+              <TableCell>Author</TableCell>
+              <TableCell>Year</TableCell>
+              <TableCell>Predicted Score (Normalized)</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {this.state.recommendedBooks?.map((book, idx) => (
+              <TableRow
+                key={book.isbn}
+                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell component="th" scope="row">{idx + 1}</TableCell>
+                <TableCell>{book.isbn}</TableCell>
+                <TableCell>{book.bookTitle}</TableCell>
+                <TableCell>{book.author}</TableCell>
+                <TableCell>{book.yearOfPublication}</TableCell>
+                <TableCell>{book.scorePrediction.toFixed(3)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      </>
+    )
   }
 
   render() {
     return (
       <div className="App" >
-        <header className="App-header">
-          <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
-            {
+        <Box sx={{ flexGrow: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={2}>
+              <Paper>{this.getUserSelector()}</Paper>
+            </Grid>
+            <Grid item xs={10}>
+            </Grid>
 
-            }
-            <ListItem alignItems="flex-start">
-              <ListItemAvatar>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />
-              </ListItemAvatar>
-              <ListItemText
-                primary="Brunch this weekend?"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      sx={{ display: 'inline' }}
-                      component="span"
-                      variant="body2"
-                      color="text.primary"
-                    >
-                      Ali Connors
-                    </Typography>
-                    {" — I'll be in your neighborhood doing errands this…"}
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-            <Divider variant="inset" component="li" />
-            <ListItem alignItems="flex-start">
-              <ListItemAvatar>
-                <Avatar alt="Travis Howard" src="/static/images/avatar/2.jpg" />
-              </ListItemAvatar>
-              <ListItemText
-                primary="Summer BBQ"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      sx={{ display: 'inline' }}
-                      component="span"
-                      variant="body2"
-                      color="text.primary"
-                    >
-                      to Scott, Alex, Jennifer
-                    </Typography>
-                    {" — Wish I could come, but I'm out of town this…"}
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-            <Divider variant="inset" component="li" />
-            <ListItem alignItems="flex-start">
-              <ListItemAvatar>
-                <Avatar alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
-              </ListItemAvatar>
-              <ListItemText
-                primary="Oui Oui"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      sx={{ display: 'inline' }}
-                      component="span"
-                      variant="body2"
-                      color="text.primary"
-                    >
-                      Sandra Adams
-                    </Typography>
-                    {' — Do you have Paris recommendations? Have you ever…'}
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-          </List>
-        </header>
+            <Grid item xs={6}>
+              {
+                this.state.recommendedBooks?.length ?
+                  <Paper>{this.getRecommendations()}</Paper>
+                  :
+                  null
+              }
+            </Grid>
+          </Grid>
+        </Box>
       </div>
     );
   }

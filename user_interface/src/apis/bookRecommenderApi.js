@@ -8,6 +8,10 @@ const bookRecommenderApi = axios.create({
     validateStatus: (status) => { return status === 200; }
 });
 
-export const getSimilarity = async () => {
-    return bookRecommenderApi.get("getSimilarity")
+export const getUsers = async () => {
+    return bookRecommenderApi.get("getUsers")
+};
+
+export const getRecommendedBooks = async (userId) => {
+    return bookRecommenderApi.get("getRecommendedBooks", { params: { user_id: userId } })
 };

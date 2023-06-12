@@ -1,7 +1,7 @@
-from flask import Flask
-
-from api.recommender.data_tools import get_users, get_books
-from api.recommender.recommender_tools import get_user_similarity
+from flask import Flask, request
+import json
+from api.recommender.recommender_tools import get_user_similarity, user_based_collaborative_filtering, \
+    get_books_with_ratings
 
 app = Flask(__name__)
 
@@ -12,18 +12,30 @@ def after_request(response):
     return response
 
 
-@app.route('/getSimilarity')
-def get_similarity():
-    user_book_matrix, user_similarity = get_user_similarity()
-
+@app.route('/getUsers')
+def get_users():
+    books_with_ratings = get_books_with_ratings()
+    user_book_matrix, user_similarity = get_user_similarity(books_with_ratings)
     user_ids = user_book_matrix.index.tolist()
-    books = get_books()
+
+    return json.dumps({
+        "user_ids": user_ids
+    })
+
+
+@app.route('/getRecommendedBooks')
+def get_recommended_books():
+    picked_user_id = request.args.get('user_id')
+    if not picked_user_id:
+        return "User id is required"
+
+    books_to_recommend = user_based_collaborative_filtering(picked_user_id=picked_user_id)
+
+    if books_to_recommend is None or books_to_recommend.empty:
+        return "Could not recommend books"
 
     return f"""{{
-        "user_book_matrix": {user_book_matrix.to_json(orient="records")},
-        "user_similarity": {user_similarity.to_json(orient="records")},
-        "user_ids": [{','.join(['"%s"' % u for u in user_ids])}],
-        "books": {books.to_json(orient="records")}
+        "books_to_recommend": {books_to_recommend.to_json(orient="records")}
     }}"""
 
 
