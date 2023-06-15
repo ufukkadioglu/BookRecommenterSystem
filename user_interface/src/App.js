@@ -18,7 +18,8 @@ import Grid from '@mui/material/Grid';
 class App extends React.Component {
   state = {
     selectedUser: "",
-    recommendedBooks: [],
+    booksByCollaborativeFiltering: [],
+    booksByPopularity: [],
     userIds: [],
   }
 
@@ -55,45 +56,55 @@ class App extends React.Component {
     if (selectedUser) {
       getRecommendedBooks(selectedUser).then(response => {
         this.setState({
-          recommendedBooks: response.data.books_to_recommend,
+          booksByCollaborativeFiltering: response.data.collaborative_filtering,
+          booksByPopularity: response.data.popularity_based,
           selectedUser: selectedUser
         })
-      }).catch(err => console.log(err));
+      }, () => console.log(this.state.booksByPopularity)).catch(err => console.log(err));
     }
   }
 
-  getRecommendations() {
+  showRecommendations() {
+    let booksByCollaborativeFiltering = this.state.booksByCollaborativeFiltering.map(item => ({
+      ...item, source: "Collaborative"
+    }));
+    let booksByPopularity = this.state.booksByPopularity.map(item => ({
+      ...item, source: "Popularity-Based"
+    }));
+
+    let recommendations = booksByCollaborativeFiltering.concat(booksByPopularity).slice(0, 10)
+
     return (
-      <>
-      <TableContainer component={Paper}>
-        <Table size="small" aria-label="a dense table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Order</TableCell>
-              <TableCell>ISBN</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Author</TableCell>
-              <TableCell>Year</TableCell>
-              <TableCell>Predicted Score (Normalized)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {this.state.recommendedBooks?.map((book, idx) => (
-              <TableRow
-                key={book.isbn}
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell component="th" scope="row">{idx + 1}</TableCell>
-                <TableCell>{book.isbn}</TableCell>
-                <TableCell>{book.bookTitle}</TableCell>
-                <TableCell>{book.author}</TableCell>
-                <TableCell>{book.yearOfPublication}</TableCell>
-                <TableCell>{book.scorePrediction.toFixed(3)}</TableCell>
+      <Paper>
+        <TableContainer component={Paper}>
+          <Table size="small" aria-label="a dense table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Order</TableCell>
+                <TableCell>ISBN</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Author</TableCell>
+                <TableCell>Score</TableCell>
+                <TableCell>Source</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      </>
+            </TableHead>
+            <TableBody>
+              {recommendations?.map((book, idx) => (
+                <TableRow
+                  key={book.isbn}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">{idx + 1}</TableCell>
+                  <TableCell>{book.isbn}</TableCell>
+                  <TableCell>{book.bookTitle}</TableCell>
+                  <TableCell>{book.bookAuthor}</TableCell>
+                  <TableCell>{book.score.toFixed(3)}</TableCell>
+                  <TableCell>{book.source}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     )
   }
 
@@ -107,11 +118,10 @@ class App extends React.Component {
             </Grid>
             <Grid item xs={10}>
             </Grid>
-
-            <Grid item xs={6}>
+            <Grid item xs={12}>
               {
-                this.state.recommendedBooks?.length ?
-                  <Paper>{this.getRecommendations()}</Paper>
+                (this.state.booksByCollaborativeFiltering?.length || this.state.booksByPopularity?.length) ?
+                  <Paper>{this.showRecommendations(this.state.booksByCollaborativeFiltering)}</Paper>
                   :
                   null
               }

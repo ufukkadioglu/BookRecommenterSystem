@@ -5,30 +5,51 @@ data_dir = './data'
 if not os.path.isdir(data_dir):
     data_dir = '../data'
 
-books_file_path = f"{data_dir}/original/BX-Books.csv"
-users_file_path = f"{data_dir}/original/BX-Users.csv"
-books_ratings_file_path = f"{data_dir}/original/BX-Book-Ratings.csv"
-user_similarity_by_pearson_correlation = f"{data_dir}/generated/user_similarity_by_pearson_correlation.csv"
+original_directory = "original"
+generated_directory = "generated"
+books_file = "BX-Books.csv"
+users_file = "BX-Users.csv"
+books_ratings_file = "BX-Book-Ratings.csv"
+user_similarity_by_pearson_correlation = "user_similarity_by_pearson_correlation.csv"
+
+csv_settings = {
+    "encoding": 'latin-1',
+    "sep": ';',
+    "quotechar": '"',
+    "escapechar": '\\'
+}
 
 
-def read_csv(path, **kwargs):
-    return pd.read_csv(path, encoding='latin-1', sep=';', quotechar='"', escapechar='\\', **kwargs)
+def get_dataset_path(origin, file_name):
+    return os.path.join(data_dir, origin, file_name)
 
 
-def write_csv(df, path):
-    return df.to_csv(path, encoding='latin-1', sep=';', quotechar='"', escapechar='\\')
+def read_csv(file_name, **kwargs):
+    generated_path = get_dataset_path(generated_directory, file_name)
+    if os.path.isfile(generated_path):
+        return pd.read_csv(generated_path, **csv_settings, **kwargs)
+
+    original_path = get_dataset_path(original_directory, file_name)
+    if os.path.isfile(original_path):
+        return pd.read_csv(original_path, **csv_settings, **kwargs)
+
+    return None
+
+
+def write_csv(df, file_name):
+    return df.to_csv(get_dataset_path(generated_directory, file_name), **csv_settings)
 
 
 def get_books():
-    return read_csv(books_file_path)
+    return read_csv(books_file)
 
 
 def get_users():
-    return read_csv(users_file_path)
+    return read_csv(users_file)
 
 
-def get_book_ratings(rating_count=100000):
-    ratings = read_csv(books_ratings_file_path)
+def get_book_ratings(rating_count=500000):
+    ratings = read_csv(books_ratings_file)
     grouped = ratings.groupby('User-ID').agg(number_of_ratings=('User-ID', 'count')).reset_index()
 
     ratings = pd.merge(ratings, grouped, on='User-ID', how='inner')
