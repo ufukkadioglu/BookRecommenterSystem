@@ -14,6 +14,9 @@ import Select from '@mui/material/Select';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import { Typography } from '@mui/material';
 
 class App extends React.Component {
   state = {
@@ -21,7 +24,21 @@ class App extends React.Component {
     booksByCollaborativeFiltering: [],
     booksByPopularity: [],
     userIds: [],
+    currentUserRatings: [],
   }
+
+
+  lowGridSettings = {
+    height: 56,
+    padding: 3,
+    overflow: 'auto'
+  }
+
+  heighGridSettings = {
+    ...this.lowGridSettings,
+    height: 700,
+  }
+
 
   componentDidMount() {
     getUsers().then(response => {
@@ -33,13 +50,13 @@ class App extends React.Component {
 
   getUserSelector() {
     return (
-      <FormControl fullWidth>
-        <InputLabel id="demo-simple-select-label">User Id</InputLabel>
+      <FormControl style={{ width: '100%' }}>
+        <InputLabel id="user_id_input">User Id</InputLabel>
         <Select
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
+          labelId="user_id_input"
+          id="user_id_select"
           value={this.state.selectedUser}
-          label="Age"
+          label="User Id"
           onChange={(event) => this.selectedUserChanged(event.target.value)}
         >
           {
@@ -58,7 +75,8 @@ class App extends React.Component {
         this.setState({
           booksByCollaborativeFiltering: response.data.collaborative_filtering,
           booksByPopularity: response.data.popularity_based,
-          selectedUser: selectedUser
+          selectedUser: selectedUser,
+          currentUserRatings: response.data.current_user_ratings
         })
       }, () => console.log(this.state.booksByPopularity)).catch(err => console.log(err));
     }
@@ -108,23 +126,93 @@ class App extends React.Component {
     )
   }
 
+  showCurrentUserRatings() {
+    let ratings = this.state.currentUserRatings;
+
+    return (
+      <Paper>
+        <TableContainer component={Paper}>
+          <Table size="small" aria-label="a dense table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Order</TableCell>
+                <TableCell>ISBN</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Author</TableCell>
+                <TableCell>Rating</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {ratings?.map((book, idx) => (
+                <TableRow
+                  key={book.isbn}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">{idx + 1}</TableCell>
+                  <TableCell>{book.isbn}</TableCell>
+                  <TableCell>{book.bookTitle}</TableCell>
+                  <TableCell>{book.bookAuthor}</TableCell>
+                  <TableCell>{book.rating}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    )
+  }
+
   render() {
     return (
       <div className="App" >
         <Box sx={{ flexGrow: 1 }}>
           <Grid container spacing={2}>
-            <Grid item xs={2}>
-              <Paper>{this.getUserSelector()}</Paper>
-            </Grid>
-            <Grid item xs={10}>
-            </Grid>
             <Grid item xs={12}>
-              {
-                (this.state.booksByCollaborativeFiltering?.length || this.state.booksByPopularity?.length) ?
-                  <Paper>{this.showRecommendations(this.state.booksByCollaborativeFiltering)}</Paper>
-                  :
-                  null
-              }
+              <Paper elevation={2} style={this.lowGridSettings}>
+                <Grid container item>
+                  <Grid item xs={3}>
+                    <Typography variant="h5">Select User</Typography>
+                  </Grid>
+                  <Grid item xs={3}>
+                    {this.getUserSelector()}
+                  </Grid>
+                  <Grid item xs={6}>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+            <Grid item xs={6}>
+              <Paper elevation={2} style={this.heighGridSettings}>
+                <Grid container item >
+                  <Grid item xs={12}>
+                    <Typography variant="h5">Current User Ratings</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    {
+                      (this.state.currentUserRatings?.length) ?
+                        <Paper>{this.showCurrentUserRatings()}</Paper>
+                        :
+                        null
+                    }
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+            <Grid item xs={6}>
+              <Paper elevation={2} style={this.heighGridSettings}>
+                <Grid container item >
+                  <Grid item xs={12}>
+                    <Typography variant="h5">Recommendations</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    {
+                      (this.state.booksByCollaborativeFiltering?.length || this.state.booksByPopularity?.length) ?
+                        <Paper>{this.showRecommendations(this.state.booksByCollaborativeFiltering)}</Paper>
+                        :
+                        null
+                    }
+                  </Grid>
+                </Grid>
+              </Paper>
             </Grid>
           </Grid>
         </Box>

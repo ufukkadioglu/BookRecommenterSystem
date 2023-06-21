@@ -2,10 +2,21 @@ import pandas as pd
 import numpy as np
 from api.recommender.data_tools import get_books, get_book_ratings, user_similarity_by_pearson_correlation, read_csv, \
     write_csv
-import os.path
 
 
 class BaseRecommender:
+    column_name_map = {
+        'ISBN': 'isbn',
+        'ScorePrediction': 'score',
+        'Book-Title': 'bookTitle',
+        'Book-Author': 'bookAuthor',
+        'Year-Of-Publication': 'yearOfPublication',
+        'Publisher': 'publisher',
+        'Image-URL-S': 'imageUrl',
+        'BayesianAverage': 'score',
+        'Book-Rating': 'rating'
+    }
+
     @staticmethod
     def get_books_with_ratings():
         # TODO: create generated file not to merge data everytime
@@ -141,18 +152,7 @@ class CollaborativeFiltering(BaseRecommender):
 
         recommended_books = pd.merge(recommended_books, books, on='ISBN', how='left')[
             ['ISBN', 'ScorePrediction', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher',
-             'Image-URL-S']].rename({'ISBN': 'isbn',
-                                     'ScorePrediction': 'score',
-                                     'Book-Title': 'bookTitle',
-                                     'Book-Author': 'bookAuthor',
-                                     'Year-Of-Publication': 'yearOfPublication',
-                                     'Publisher': 'publisher',
-                                     'Image-URL-S': 'imageUrl'
-                                     }, axis='columns')
-
-        # ufuk: 254'ün score'ları 10un üzerinde çıktı??
-
-        recommended_books['score'] = recommended_books['score'] + user_average_ratings[picked_user_id]
+             'Image-URL-S']].rename(BaseRecommender.column_name_map, axis='columns')
 
         return recommended_books
 
@@ -164,14 +164,7 @@ class PopularityBasedRecommender(BaseRecommender):
         books = get_books()
 
         most_popular = pd.merge(book_scores, books, on='ISBN').sort_values('BayesianAverage', ascending=False).rename(
-            {'ISBN': 'isbn',
-             'BayesianAverage': 'score',
-             'Book-Title': 'bookTitle',
-             'Book-Author': 'bookAuthor',
-             'Year-Of-Publication': 'yearOfPublication',
-             'Publisher': 'publisher',
-             'Image-URL-S': 'imageUrl'
-             }, axis='columns')
+            BaseRecommender.column_name_map, axis='columns')
         return most_popular.head(number_of_books_to_recommend)
 
     @staticmethod

@@ -39,10 +39,15 @@ def get_recommended_books():
     books_by_popularity = PopularityBasedRecommender.recommend(picked_user_id=picked_user_id)
 
     books_with_ratings = BaseRecommender.get_books_with_ratings()
+    books_with_ratings = books_with_ratings[books_with_ratings['User-ID'] == picked_user_id].sort_values('Book-Rating',
+                                                                                                         ascending=False)
+    books_with_ratings = books_with_ratings[['ISBN', 'Book-Rating', 'Book-Title', 'Book-Author']].rename(
+        BaseRecommender.column_name_map, axis='columns')
 
     return f"""{{
         "collaborative_filtering": {books_by_collaborating_filtering.to_json(orient="records")},
-        "popularity_based": {books_by_popularity.to_json(orient="records")}
+        "popularity_based": {books_by_popularity.to_json(orient="records")},
+        "current_user_ratings": {books_with_ratings.to_json(orient="records")}
     }}"""
 
 
