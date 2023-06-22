@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from api.recommender.data_tools import get_books, get_book_ratings, user_similarity_by_pearson_correlation, read_csv, \
     write_csv
+from api.recommender.evaluating_tools import RecommenderMetrics
 
 
 class BaseRecommender:
@@ -24,6 +25,15 @@ class BaseRecommender:
         books = get_books()
         books_with_ratings = pd.merge(ratings, books, on='ISBN', how='inner')
         return books_with_ratings
+
+    @classmethod
+    def evaluate_recommendations(cls, user_id):
+        book_ratings = cls.get_books_with_ratings()
+        evaluation = RecommenderMetrics.get_mean_absolute_error_analysis(user_id,
+                                                                         book_ratings,
+                                                                         cls.recommend)
+
+        return evaluation
 
     @classmethod
     def recommend(cls, picked_user_id, number_of_books_to_recommend=10):
@@ -110,11 +120,12 @@ class CollaborativeFiltering(BaseRecommender):
         return user_book_matrix, user_similarity, user_average_ratings
 
     @classmethod
-    def recommend(cls, picked_user_id, number_of_books_to_recommend=10):
-        user_similarity_threshold = 0.3
+    def recommend(cls, picked_user_id, number_of_books_to_recommend=10, books_with_ratings=None,
+                  user_similarity_threshold=0.3):
         number_of_similar_users_to_consider = 10
 
-        books_with_ratings = CollaborativeFiltering.get_books_with_ratings()
+        if books_with_ratings is None:
+            books_with_ratings = CollaborativeFiltering.get_books_with_ratings()
 
         user_book_matrix, user_similarity, user_average_ratings = CollaborativeFiltering.get_user_similarity(
             books_with_ratings)
@@ -147,6 +158,11 @@ class CollaborativeFiltering(BaseRecommender):
 
         recommended_books = CollaborativeFiltering.get_top_n_similar_books(similar_users, similar_user_books,
                                                                            number_of_books_to_recommend)
+
+        # TODO: some ratings are being above 10 after adding the user average back to denormalized ratings,
+        #  there must be a bug!
+        recommended_books['ScorePrediction'] = recommended_books['ScorePrediction'] + user_average_ratings[
+            picked_user_id]
 
         books = get_books()
 

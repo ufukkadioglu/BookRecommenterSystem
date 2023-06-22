@@ -14,8 +14,6 @@ import Select from '@mui/material/Select';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 
 class App extends React.Component {
@@ -25,6 +23,8 @@ class App extends React.Component {
     booksByPopularity: [],
     userIds: [],
     currentUserRatings: [],
+    evaluation: {},
+    downloadingMessage: null
   }
 
 
@@ -34,18 +34,25 @@ class App extends React.Component {
     overflow: 'auto'
   }
 
-  heighGridSettings = {
+  mediumGridSettings = {
+    ...this.lowGridSettings,
+    height: 345,
+  }
+
+  highGridSettings = {
     ...this.lowGridSettings,
     height: 700,
   }
 
 
   componentDidMount() {
-    getUsers().then(response => {
-      this.setState({
-        userIds: response.data.user_ids,
-      });
-    }).catch(err => console.log(err));
+    this.setState({ downloadingMessage: 'Downloading users' }, () => {
+      getUsers().then(response => {
+        this.setState({
+          userIds: response.data.user_ids,
+        });
+      }).catch(err => console.log(err)).finally(() => this.setState({ downloadingMessage: '' }));
+    })
   }
 
   getUserSelector() {
@@ -71,14 +78,18 @@ class App extends React.Component {
 
   selectedUserChanged(selectedUser) {
     if (selectedUser) {
-      getRecommendedBooks(selectedUser).then(response => {
-        this.setState({
-          booksByCollaborativeFiltering: response.data.collaborative_filtering,
-          booksByPopularity: response.data.popularity_based,
-          selectedUser: selectedUser,
-          currentUserRatings: response.data.current_user_ratings
-        })
-      }, () => console.log(this.state.booksByPopularity)).catch(err => console.log(err));
+      this.setState({ downloadingMessage: `Downloading user: ${selectedUser}` }, () => {
+        getRecommendedBooks(selectedUser).then(response => {
+          this.setState({
+            booksByCollaborativeFiltering: response.data.collaborative_filtering,
+            booksByPopularity: response.data.popularity_based,
+            selectedUser: selectedUser,
+            currentUserRatings: response.data.current_user_ratings,
+            evaluation: response.data.evaluation,
+            downloadingMessage: ''
+          })
+        }).catch(err => console.log(err)).finally(() => this.setState({ downloadingMessage: '' }));
+      })
     }
   }
 
@@ -161,6 +172,37 @@ class App extends React.Component {
     )
   }
 
+  getEvaluations() {
+    if (!this.state.evaluation)
+      return null
+
+    let { error, message, ...rest } = this.state.evaluation;
+
+    return (
+      <>
+        {
+          error ?
+            <Typography>ERROR: {error}</Typography>
+            : null
+        }
+        {
+          message ?
+            <Typography>Message: {message}</Typography>
+            : null
+        }
+        {
+          Object.keys(rest).map(key => (
+            <Typography key={key}>{this.prettifyKey(key)}: {rest[key].toFixed(3)}</Typography>
+          ))
+        }
+      </>
+    )
+  }
+
+  prettifyKey(key) {
+    return key.toLowerCase().split('_').map(key_part => key_part.charAt(0).toUpperCase() + key_part.substring(1)).join(' ')
+  }
+
   render() {
     return (
       <div className="App" >
@@ -175,21 +217,12 @@ class App extends React.Component {
                   <Grid item xs={3}>
                     {this.getUserSelector()}
                   </Grid>
-                  <Grid item xs={6}>
+                  <Grid item xs={1}>
                   </Grid>
-                </Grid>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper elevation={2} style={this.heighGridSettings}>
-                <Grid container item >
-                  <Grid item xs={12}>
-                    <Typography variant="h5">Current User Ratings</Typography>
-                  </Grid>
-                  <Grid item xs={12}>
+                  <Grid item xs={5}>
                     {
-                      (this.state.currentUserRatings?.length) ?
-                        <Paper>{this.showCurrentUserRatings()}</Paper>
+                      this.state.downloadingMessage ?
+                        <Typography style={{ color: "red" }}>{this.state.downloadingMessage}</Typography>
                         :
                         null
                     }
@@ -198,7 +231,7 @@ class App extends React.Component {
               </Paper>
             </Grid>
             <Grid item xs={6}>
-              <Paper elevation={2} style={this.heighGridSettings}>
+              <Paper elevation={2} style={this.highGridSettings}>
                 <Grid container item >
                   <Grid item xs={12}>
                     <Typography variant="h5">Recommendations</Typography>
@@ -213,6 +246,42 @@ class App extends React.Component {
                   </Grid>
                 </Grid>
               </Paper>
+            </Grid>
+            <Grid item xs={6} container>
+              <Grid item xs={12}>
+                <Paper elevation={2} style={this.mediumGridSettings}>
+                  <Grid container item >
+                    <Grid item xs={12}>
+                      <Typography variant="h5">User Ratings</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      {
+                        (this.state.currentUserRatings?.length) ?
+                          <Paper>{this.showCurrentUserRatings()}</Paper>
+                          :
+                          null
+                      }
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper elevation={2} style={this.mediumGridSettings}>
+                  <Grid container item spacing={1}>
+                    <Grid item xs={12}>
+                      <Typography variant="h5">Evaluation</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      {
+                        (this.state.evaluation && Object.keys(this.state.evaluation)) ?
+                          this.getEvaluations()
+                          :
+                          null
+                      }
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
             </Grid>
           </Grid>
         </Box>

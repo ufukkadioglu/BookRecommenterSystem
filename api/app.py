@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, request
 import json
 from api.recommender.recommender_tools import CollaborativeFiltering, PopularityBasedRecommender, BaseRecommender
@@ -44,10 +45,17 @@ def get_recommended_books():
     books_with_ratings = books_with_ratings[['ISBN', 'Book-Rating', 'Book-Title', 'Book-Author']].rename(
         BaseRecommender.column_name_map, axis='columns')
 
+    try:
+        evaluation = CollaborativeFiltering.evaluate_recommendations(picked_user_id)
+    except Exception as e:
+        print(traceback.format_exc())
+        evaluation = {'error': str(e)}
+
     return f"""{{
         "collaborative_filtering": {books_by_collaborating_filtering.to_json(orient="records")},
         "popularity_based": {books_by_popularity.to_json(orient="records")},
-        "current_user_ratings": {books_with_ratings.to_json(orient="records")}
+        "current_user_ratings": {books_with_ratings.to_json(orient="records")},
+        "evaluation": {json.dumps(evaluation)}
     }}"""
 
 
