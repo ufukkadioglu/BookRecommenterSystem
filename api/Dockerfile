@@ -1,6 +1,6 @@
 FROM python:3.10.6-slim-buster
 
-WORKDIR /api
+WORKDIR book_recommender/api
 
 RUN apt update --fix-missing
 
@@ -13,7 +13,7 @@ COPY . .
 # install requirements
 RUN pip install -r requirements.txt
 
-ENV PYTHONPATH "${PYTHONPATH}:/api"
+ENV PYTHONPATH "${PYTHONPATH}:/book_recommender"
 
 # start api
 CMD exec uwsgi --socket 0.0.0.0:80 --protocol=http -w wsgi:app
