@@ -115,6 +115,8 @@ class CollaborativeFiltering(BaseRecommender):
 
         user_book_matrix, user_average_ratings = CollaborativeFiltering.get_normalized_rating_matrix(agg_ratings)
 
+        user_book_matrix.loc[-1] = [None] * len(user_book_matrix.columns)
+
         user_similarity = CollaborativeFiltering.get_user_similarity_matrix(user_book_matrix)
 
         return user_book_matrix, user_similarity, user_average_ratings
@@ -161,8 +163,9 @@ class CollaborativeFiltering(BaseRecommender):
 
         # TODO: some ratings are being above 10 after adding the user average back to denormalized ratings,
         #  there must be a bug!
-        recommended_books['ScorePrediction'] = recommended_books['ScorePrediction'] + user_average_ratings[
-            picked_user_id]
+        if not recommended_books.empty:
+            recommended_books['ScorePrediction'] = recommended_books['ScorePrediction'] + user_average_ratings[
+                picked_user_id]
 
         books = get_books()
 
