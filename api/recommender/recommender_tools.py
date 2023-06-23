@@ -29,9 +29,9 @@ class BaseRecommender:
     @classmethod
     def evaluate_recommendations(cls, user_id):
         book_ratings = cls.get_books_with_ratings()
-        evaluation = RecommenderMetrics.get_mean_absolute_error_analysis(user_id,
-                                                                         book_ratings,
-                                                                         cls.recommend)
+        evaluation = RecommenderMetrics.get_error_analysis(user_id,
+                                                           book_ratings,
+                                                           cls.recommend)
 
         return evaluation
 

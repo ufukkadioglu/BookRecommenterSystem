@@ -16,7 +16,7 @@ class RecommenderMetrics:
         return mse(actual_ratings, predictions, squared=False)
 
     @staticmethod
-    def get_mean_absolute_error_analysis(user_id, book_ratings, recommender_func, sample_size=100):
+    def get_error_analysis(user_id, book_ratings, recommender_func, sample_size=100):
         sample_ratings_for_user = book_ratings[book_ratings['User-ID'] == user_id].sample(n=sample_size)
         book_ratings = book_ratings.drop(sample_ratings_for_user.index, axis=0)
 
