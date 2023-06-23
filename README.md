@@ -17,3 +17,19 @@ https://stackoverflow.com/questions/54357300/bayesian-averaging-in-a-dataframe
 
 Project repository:
 https://github.com/ufukkadioglu/BookRecommenterSystem
+
+General project structure:
+
+![project_structure.png](images%2Fproject_structure.png)
+
+How does it work:
+
+![project_flow.png](images%2Fproject_flow.png)
+
+Collaborative recommendations:
+
+![collaborative_rocommendations.png](images%2Fcollaborative_rocommendations.png)
+
+Popularity-Based Recommendations:
+
+![popularity_based_recommendations.png](images%2Fpopularity_based_recommendations.png)
